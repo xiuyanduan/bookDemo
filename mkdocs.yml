@@ -1,0 +1,11 @@
+site_name: My Docs
+pages:
+- Home: index.md
+- About: about.md 
+theme: mkdocs
+#theme: readthedocs
+repo_url: https://github.com/xiuyanduan/bookDemo
+markdown_extensions:
+    - toc:
+        permalink:
+    - admonition:
