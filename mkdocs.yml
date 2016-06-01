@@ -1,6 +1,6 @@
 site_name: My Docs
 pages:
-- hadoop-cluster-setup: hadoop-cluster-setup.md
+- index: hadoop-cluster-setup.md
 - flume: flume.md 
 theme: mkdocs
 #theme: readthedocs
