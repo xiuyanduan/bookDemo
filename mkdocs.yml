@@ -1,4 +1,4 @@
-site_name: My Docs
+site_name: Hadoop notes
 pages:
 - index: hadoop-cluster-setup.md
 - flume: flume.md 
