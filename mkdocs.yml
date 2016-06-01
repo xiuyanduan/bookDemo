@@ -1,7 +1,7 @@
 site_name: My Docs
 pages:
-- Home: index.md
-- About: about.md 
+- hadoop-cluster-setup: hadoop-cluster-setup.md
+- flume: flume.md 
 theme: mkdocs
 #theme: readthedocs
 repo_url: https://github.com/xiuyanduan/bookDemo
