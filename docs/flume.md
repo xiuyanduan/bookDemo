@@ -40,12 +40,12 @@ agent1.sources.source1.spoolDir = /tmp/spooldir
 agent1.sinks.sink1.type = logger
 agent1.channels.channel1.type = file
 ```
-客户端的层次结构属性名在最顶端。在本例中，只有一个叫做__agent1__的客户端。客户端不同组件的名称在下一层级设置，例如_agent1.sources_描述了在__agent1__上运行的_sources_（本例是一个单独的_sources_，__source1__）。类似地，__agent1__也有_sink_（__sink1__）和_channel_（__channel1__）。
+客户端的层次结构属性名在最顶端。在本例中，只有一个叫做**agent1**的客户端。客户端不同组件的名称在下一层级设置，例如_agent1.sources_描述了在**agent1**上运行的_sources_（本例是一个单独的_sources_，**source1**）。类似地，**agent1**也有_sink_（**sink1**）和_channel_（**channel1**）。
 
-每一个组件的属性在下一层次结构设置，属性的配置根据属性不同而可用。在本例中__agent1.sources.source1.type__被设置为__spooldir__，这是一个spooling directory source监控新文件的spooling目录。spooling directory source定义了__spoolDir__属性，完整的键值是__agent1
-.sources.source1.spoolDir__。source的channel由__agent1.sources.source1.channels__设置。
+每一个组件的属性在下一层次结构设置，属性的配置根据属性不同而可用。在本例中**agent1.sources.source1.type**被设置为**spooldir**，这是一个spooling directory source监控新文件的spooling目录。spooling directory source定义了**spoolDir**属性，完整的键值是**agent1
+.sources.source1.spoolDir**。source的channel由**agent1.sources.source1.channels**设置。
 
-_sink_是一个__logger__，记录事件到输出，它必须和channel（通过__agent1.sinks.sink1.channel property__设置）连接。channel是一个__file__channel，意味着在channel中的事件会永久保存到磁盘中，整个系统的说明如下图所示
+_sink_是一个**logger**，记录事件到输出，它必须和channel（通过**agent1.sinks.sink1.channel property**设置）连接。channel是一个**file**channel，意味着在channel中的事件会永久保存到磁盘中，整个系统的说明如下图所示
 
 在运行例子之前，我们需要在本地文件系统上新建spooling目录：
 ```
@@ -59,7 +59,7 @@ mkdir /tmp/spooldir
 --conf $FLUME_HOME/conf \
 -Dflume.root.logger=INFO,console
 ```
-如上例中Flume的属性文件需要__-conf-file__指定，客户端的名字必须通过__--name__指定（因Flume可以设置多个客户端，需要指定哪个运行）。__--conf__参数告知Flume寻找它的配置文件，与环境变量类似。
+如上例中Flume的属性文件需要**-conf-file**指定，客户端的名字必须通过**--name**指定（因Flume可以设置多个客户端，需要指定哪个运行）。**--conf**参数告知Flume寻找它的配置文件，与环境变量类似。
 
 在一个新的终端，在spooling目录内新建一个文件，假设这个文件不可改变。为了阻source读取并改写文件，将内容写入到隐藏文件中。再将文件重命名使source可以读取到：
 ```
