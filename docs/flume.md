@@ -1,10 +1,10 @@
 Hadoop被设计用来处理很大量的数据。通常认为这些数据已经存储在HDFS，或者可以大量复制。然而，很多系统不满足这些假设。这些系统产生大量的数据流需要使用Hadoop结构化、存储、分析，Apache Flume就是被设计用来做这些工作的。
 
-Flume被设计用来将大量数据驱动的数据传入Hadoop，典型应用场景是使用Flume收集银行web服务器的日志，然后将这些日志通常新的汇总文件传入到HDFS处理。通常的传输目的地(在Flume中的sink)是HDFS。然而，Flume足够灵活也能够写入到其他系统，例如HBase和Solr。
+Flume被设计用来将大量数据驱动的数据传入Hadoop，典型应用场景是使用Flume收集银行web服务器的日志，然后将这些日志聚合到新的汇总文件并传入HDFS处理。通常的传输目的地(在Flume中的sink)是HDFS。然而，Flume足够灵活也能够写入到其他系统，例如HBase和Solr。
 
-为了使用Flume，需要运行Flume _agent_端，这是一个Java的常驻进程，运行_sources_和_sinks_，连接_channels_。Flume中的_sources_产生_events_并将它们传送到_channel_，_channel_会在存储这些_events_直到它们被送到sink中。可以认为_source-channel-sink_结合是一个基本的Flume组成部分。
+为了使用Flume，需要运行Flume *agent*端（下文翻译为客户端），这是一个Java的常驻进程，运行*sources*和*sinks*，连接*channels*。Flume中的*sources*产生*events*（以下翻译为事件）并将它们传送到*channel*，*channel*会存储这些*events*直到它们被送到*sink*中。可以认为*source-channel-sink*结合是一个基本的Flume组成部分。
 
-Flume的安装由收集分布式拓扑结构中运行的客户端组成。处于系统边缘的客户端（例如web服务器）收集数据，转发到负责汇总的客户端，最后存储到最终目的地。指定的_sources_和_sinks_客户端被配置用来运行收集工作，实际上使用Flume就是将这个配置放到一起的实践。本文将描述如何搭建Flume拓扑作为Hadoop生态圈的一部分
+Flume的安装由收集分布式拓扑结构中运行的客户端组成。处于系统边缘的客户端（例如web服务器）收集数据，转发到负责汇总的客户端，最后存储到最终目的地。指定的*sources*和*sinks*客户端被配置用来运行收集工作，实际上使用Flume就是将这个配置放到一起的实践。本文将描述如何搭建Flume拓扑作为Hadoop生态圈的一部分
 
 # 安装Flume
 
@@ -19,7 +19,7 @@ Flume的安装由收集分布式拓扑结构中运行的客户端组成。处于
 ```
 Flume客户端可以使用`flume-ng`命令启动，如下所述。
 
-# 一个例子
+# 示例
 
 为了显示Flume如何工作，让我们从以下设置开始：
 
@@ -28,8 +28,9 @@ Flume客户端可以使用`flume-ng`命令启动，如下所述。
 
 现在手动增加文件，但很容易假设一个进程（例如web服务器）不断产生新文件需要被Flume摄取。在生产环境中，不仅仅是记录文件，还需要通过后来的处理将这些内容写入到HDFS——下文会详述。
 
-在本例中，Flume客户端运行一个单独的_source-channel-sink_，通过一个Java properties文件配置。配置文件决定了使用_sources_的类型、_sinks_和_channels_，它们是互相关联的。如下例所示：
+在本例中，Flume客户端运行一个单独的*source-channel-sink*，通过一个Java properties文件配置。配置文件决定了使用*sources*、*sinks*和*channels*的类型，它们是互相关联的。如下例所示：
 ```
+##Flume configuration using a spooling directory source and a logger sink
 agent1.sources = source1
 agent1.sinks = sink1
 agent1.channels = channel1
@@ -40,12 +41,11 @@ agent1.sources.source1.spoolDir = /tmp/spooldir
 agent1.sinks.sink1.type = logger
 agent1.channels.channel1.type = file
 ```
-客户端的层次结构属性名在最顶端。在本例中，只有一个叫做__agent1__的客户端。客户端不同组件的名称在下一层级设置，例如_agent1.sources_描述了在__agent1__上运行的_sources_（本例是一个单独的_sources_，__source1__）。类似地，__agent1__也有_sink_（__sink1__）和_channel_（__channel1__）。
+客户端的层次结构属性名在最顶端。在本例中，只有一个叫做**agent1**的客户端。客户端不同组件的名称在下一层级设置，例如*agent1.sources*描述了在**agent1**上运行的*sources*（本例是一个单独的*sources*，**source1**）。类似地，**agent1**也有*sink*（**sink1**）和*channel*（**channel1**）。
 
-每一个组件的属性在下一层次结构设置，属性的配置根据属性不同而可用。在本例中__agent1.sources.source1.type__被设置为__spooldir__，这是一个spooling directory source监控新文件的spooling目录。spooling directory source定义了__spoolDir__属性，完整的键值是__agent1
-.sources.source1.spoolDir__。source的channel由__agent1.sources.source1.channels__设置。
+每一个组件的属性在下一层次结构设置，属性的配置根据属性不同而可用。在本例中**agent1.sources.source1.type**被设置为**spooldir**，这是一个spooling directory source，监控新文件的spooling目录。spooling directory source定义了**spoolDir**属性，完整的键值是agent1.sources.source1.spoolDir。source的channel由agent1.sources.source1.channels设置。
 
-_sink_是一个__logger__，记录事件到输出，它必须和channel（通过__agent1.sinks.sink1.channel property__设置）连接。channel是一个__file__channel，意味着在channel中的事件会永久保存到磁盘中，整个系统的说明如下图所示
+*sink*是一个**logger**，记录事件到输出，它必须和channel（通过**agent1.sinks.sink1.channel property**设置）连接。channel是一个**file**channel，意味着在channel中的事件会永久保存到磁盘中，整个系统的说明如下图所示
 
 在运行例子之前，我们需要在本地文件系统上新建spooling目录：
 ```
@@ -59,9 +59,9 @@ mkdir /tmp/spooldir
 --conf $FLUME_HOME/conf \
 -Dflume.root.logger=INFO,console
 ```
-如上例中Flume的属性文件需要__-conf-file__指定，客户端的名字必须通过__--name__指定（因Flume可以设置多个客户端，需要指定哪个运行）。__--conf__参数告知Flume寻找它的配置文件，与环境变量类似。
+如上例中Flume的属性文件需要**-conf-file**指定，客户端的名字必须通过**--name**指定（因Flume可以设置多个客户端，需要指定哪个运行）。**--conf**参数告知Flume寻找它的配置文件，与环境变量类似。
 
-在一个新的终端，在spooling目录内新建一个文件，假设这个文件不可改变。为了阻source读取并改写文件，将内容写入到隐藏文件中。再将文件重命名使source可以读取到：
+在一个新的终端，在spooling目录内新建一个文件，假设这个文件不可改变。为了阻止source读取并改写文件，将内容写入到隐藏文件中。再将文件重命名使source可以读取到：
 ```
 % echo "Hello Flume" > /tmp/spooldir/.file1.txt
 % mv /tmp/spooldir/.file1.txt /tmp/spooldir/file1.txt
@@ -72,7 +72,7 @@ Preparing to move file /tmp/spooldir/file1.txt to
 /tmp/spooldir/file1.txt.COMPLETED
 Event: { headers:{} body: 48 65 6C 6C 6F 20 46 6C 75 6D 65 Hello Flume }
 ```
-spooling目录将文件按行切割来摄取，每行均产生Flume事件。事件有一个可选的头部和二进制的正文，文档的编写格式为UTF-8。正文部分被sink用十六进制和字符串的形式记录。上文放到spooling目录下的文件只有一行，故只有一个事件在本例中被记录。可以看到文件被soucre重命名为_file1.txt.COMPLETED_，意味着Flume已经处理过该文件，且不会再处理
+spooling目录将文件按行切割来摄取，每行均产生Flume事件。事件有一个可选的头部和二进制的正文，文档的编写格式为UTF-8。正文部分被sink用十六进制和字符串的形式记录。上文放到spooling目录下的文件只有一行，故只有一个事件在本例中被记录。可以看到文件被soucre重命名为*file1.txt.COMPLETED*，意味着Flume已经处理过该文件，且不会再处理
 
 # 事务和可靠性
 
@@ -185,11 +185,115 @@ agent2.channels.channel2.dataDirs=/tmp/agent2/file-channel/data
 ```
 
 ## 传输保证
+Flume使用事务保证每一份定量的事件从一个source传送到一个channel，再从channel传到sink。在上文中的*Avro sink-source*连接中，事件保证事件从一个客户端传到下一个。
+
+通过Avro sink读取**agent1**的文件*channel*中定量的事件被包括在一整个事务中。只有在Avro sink（同步）确认写到Avro source的RPC成功结束，整个事务才会被提交。
 
 # Sink Groups
 
-# Integrating Flume with Applications
+一个sink组将多个sinks看作一个整体，如下图，用负载均衡做故障转移。如果第二tier不可用，事件会被发送到另一个第二tier，并可不间断的传送到HDFS
 
-# Component Catalog
+为了配置一个sink组，客户端**sinkgroups**属性设置sink组的名字，然后sink组列出组内所有的sink，包括sink处理的类型，这决定了处理sink的方式。下例展示两个Avro端点的负载均衡配置
+```
+###A Flume configuration for load balancing between two Avro endpoints
+using a sink group
+agent1.sources = source1
+agent1.sinks = sink1a sink1b
+agent1.sinkgroups = sinkgroup1
+agent1.channels = channel1
+agent1.sources.source1.channels = channel1
+agent1.sinks.sink1a.channel = channel1
+agent1.sinks.sink1b.channel = channel1
+agent1.sinkgroups.sinkgroup1.sinks = sink1a sink1b
+agent1.sinkgroups.sinkgroup1.processor.type = load_balance
+agent1.sinkgroups.sinkgroup1.processor.backoff = true
+agent1.sources.source1.type = spooldir
+agent1.sources.source1.spoolDir = /tmp/spooldir
+agent1.sinks.sink1a.type = avro
+agent1.sinks.sink1a.hostname = localhost
+agent1.sinks.sink1a.port = 10000
+agent1.sinks.sink1b.type = avro
+agent1.sinks.sink1b.hostname = localhost
+agent1.sinks.sink1b.port = 10001
+agent1.channels.channel1.type = file
 
-# Further Reading
+```
+此例定义了两个Avro sinks，**sink1a**和**sink1b**，区别在于连接的Avro端点不同（因为在localhost中运行所有例子，故只有端口不同，在一个分布式系统中，应该host不同，端口相同）。定义了**sinkgroup1**，把它sink连接到**sink1a**和**sink1b**
+
+处理类型被设置为**load_balance**，会在组内的sink尝试传送事件流，使用一个轮询选择机制（可以通过改变**processor.selector**属性来改）。如果一个sink不可用，则会尝试下一个；如果均不可用，事件不会从channel移除，就像单独sink的情况。默认情况下，sink不可用不会被sink处理器记录，所以失败的sink会重新尝试已经在传送的定量的事件。这样是效率低下的，所以设置**processor.backoff**属性改这种行为，使得失败的sink在一个指数增长地中断时间（最大值30秒，由**processor.selector.maxTimeOut**决定）内被列入黑名单
+
+第二tier客户端其中的一个**agent2a**配置如下所示：
+```
+agent2a.sources = source2a
+agent2a.sinks = sink2a
+agent2a.channels = channel2a
+agent2a.sources.source2a.channels = channel2a
+agent2a.sinks.sink2a.channel = channel2a
+agent2a.sources.source2a.type = avro
+agent2a.sources.source2a.bind = localhost
+agent2a.sources.source2a.port = 10000
+agent2a.sinks.sink2a.type = hdfs
+agent2a.sinks.sink2a.hdfs.path = /tmp/flume
+agent2a.sinks.sink2a.hdfs.filePrefix = events-a
+agent2a.sinks.sink2a.hdfs.fileSuffix = .log
+agent2a.sinks.sink2a.hdfs.fileType = DataStream
+agent2a.channels.channel2a.type = file
+```
+**agent2b**的配置文件是相同的，除了Avro source的端口（因为所有例子运行在localhost）和HDFS sink创建的文件前缀。这个文件前缀是确保由second-tier客户端同时创建的HDFS文件不会发生冲突。
+
+在更多情况下，客户端运行在不同的服务器上，hostname可以用来独立区分文件名字通过配置一个host intercepter，包手**%{host}**转义序列在文件路径或前缀中：
+```
+agent2.sinks.sink2.hdfs.filePrefix = events-%{host}
+```
+如下图所示：
+
+# Flumey应用整合
+
+一个Avro source是一个接收Flume事件的RPC端点，能够将一个RPC客户端发送事件到端点，嵌入到任何想要将事件介绍到Flume的应用。
+
+*Flume SDK*是一个模块，提供了Java RpcClient类，用作发送事件对象到一个Avro端点（一个Avro source在Flume客户端上运行，通常在另一个tier）。客户端可以配置为两个端点之间故障处理或负载均衡，Thrift端点（Thrift sources）同样支持。
+
+Flume *embedded agent*提供相似的功能：一个运行在Java应用上的缩减版的Flume客户端。有一个独立的特殊source，通过调用一个叫做*EmbeddedAgent*对象的方法发送Flume **Event**对象；只有Avro sinks支持该特性，但其他sinks可以配置为故障转移或者负载均衡。
+
+SDK和嵌入客户端更多信息参见官方开发者[文档](http://flume.apache.org/FlumeDeveloperGuide.html)
+
+# 组件目录
+
+上文只使用到少量的Flume组件，它还有更多组件简述如下。参考官方[文档](http://flume.apache.org/FlumeUserGuide.html)获得更多信息。
+
+类别  | 组件| 备注
+---|---|---  
+Source | Avro | Listens on a port for events sent over Avro RPC by an Avro sink or the Flume SDK.  
+Sink | Exec | Runs a Unix command (e.g., tail -F/path/to/file) and converts lines read from standard output into events. Note that this source cannot guarantee delivery of events to the channel; see the spooling directory source or the Flume SDK for better alternatives.
+Sink | HTTP| Listens on a port and converts HTTP requests into events using a pluggable handler (e.g., a JSON handler or binary blob handler).
+Sink | JMS | Reads messages from a JMS queue or topic and converts them into events.
+Sink | Netcat | Listens on a port and converts each line of text into an event.
+Sink | Sequence generator | Generates events from an incrementing counter. Useful for testing.
+Sink | Spooling directory | Reads lines from files placed in a spooling directory and converts them into events.
+Sink | Syslog | Reads lines from syslog and converts them into events.
+Sink | Thrift | Listens on a port for events sent over Thrift RPC by a Thrift sink or the Flume SDK.
+Sink | Twitter | Connects to Twitter’s streaming API (1% of the firehose) and converts tweets into events.
+Sink | Avro | Sends events over Avro RPC to an Avro source.
+Sink | Elasticsearch| Writes events to an Elasticsearch cluster using the Logstash format.
+Sink | File roll | Writes events to the local filesystem.
+Sink | HBase | Writes events to HBase using a choice of serializer.
+Sink | HDFS | Writes events to HDFS in text, sequence file, Avro, or a custom format.
+Sink | IRC | Sends events to an IRC channel.
+Sink | Logger | Logs events at INFO level using SLF4J. Useful for testing.
+Sink | Morphline (Solr) | Runs events through an in-process chain of Morphline commands. Typically used to load data into Solr.
+Sink | Null | Discards all events.
+Sink | Thrift | Sends events over Thrift RPC to a Thrift source
+Channel| File| Stores events in a transaction log stored on the local filesystem.
+Channel| JDBC| Stores events in a database (embedded Derby).
+Channel| Memory| Stores events in an in-memory queue.
+Interceptor| Host| Sets a host header containing the agent’s hostname or IP address on all events.
+Interceptor| Morphline| Filters events through a Morphline configuration file. Useful for conditionally dropping events or adding headers based on pattern matching or content extraction.
+Interceptor| Regex extractor| Sets headers extracted from the event body as text using a specified regular expression.
+Interceptor| Regex filtering| Includes or excludes events by matching the event body as text against a specified regular expression.
+Interceptor| Static| Sets a fixed header and value on all events.
+Interceptor| Timestamp| Sets a timestamp header containing the time in milliseconds at which the agent processes the event.
+Interceptor| UUID| Sets an id header containing a universally unique identifier on all events. Useful for later deduplication.
+
+# 深入了解
+
+本文只是简述了Flume，了解更多请参阅[Using Flume](http://shop.oreilly.com/product/0636920030348.do)。更多生产中的实践及搭建Hadoop应用请参见[Hadoop Application Architectures](http://shop.oreilly.com/product/0636920033196.do)
