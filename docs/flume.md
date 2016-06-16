@@ -47,6 +47,8 @@ agent1.channels.channel1.type = file
 
 *sink*是一个**logger**，记录事件到输出，它必须和channel（通过**agent1.sinks.sink1.channel property**设置）连接。channel是一个**file**channel，意味着在channel中的事件会永久保存到磁盘中，整个系统的说明如下图所示
 
+![flume_1.JPG](images/flume_1.JPG)
+
 在运行例子之前，我们需要在本地文件系统上新建spooling目录：
 ```
 mkdir /tmp/spooldir
@@ -181,6 +183,8 @@ agent1.channels.channel1b.type = memory
 ```
 关键改变在于source被配置成传输到多个channels，通过将**agent1.sources.source1.channels**设置成一个channel names之间用空格分隔的列表 ，本例中为channel1a和channel1b。现在，传到logger sink（channel1b）的channel是一个memory channel，因为我们仅为了做测试传输日志事件，并不关心客户端重启时丢失的事件。同样和前述例子相同，每个channel配置一个sink，如下图所示：
 
+![flume_2.JPG](images/flume_2.JPG)
+
 ## Delivery Guarantees（传输保证）
 Flume从spooling directory source到每一个channel使用分离的事务传送定量的事件。在本例中，通过channel传到HDFS sink使用一个事务，另一个事务传送相同的事件量到logger sink的channel。如果这两个事务有任何一个失败了（例如一个channel已满），则事件将从sources中移出，过段时间再重试。
 
@@ -200,6 +204,8 @@ MorphlineSolrSink将fileds从Flume事件提取出来将传输到一个Solr文档
 如果设置大规模Flume客户端？如果有一个客户端在每一个节点产生新的原始数据，到目前为止的配置，任何时刻每个文件都从一个节点持续性写入到HDFS。如果能够将事件从一组节点聚合到一个文件会更好，这样会产生更少更大的文件（伴随着减少HDFS的压力，并且更有效的处理MapReduce）。同样，如果有必要，文件可以更频繁的回滚因为被更大数量的节点提前数据，导致了从一个事件的建立到可提供分析之间的时间间隔。
 
 将Flume客户端事件聚合是由Flume客户端的*tiers*实现的。第一个*tier*收集原始sources（例如web服务器），将它们发送到第二个*tier*的更小的客户端集合，第二*tier*在写入HDFS之前将第一个*tier*的事件聚合。如果source节点足够多，则需要更多的*tiers*
+
+![flume_3.JPG](images/flume_3.JPG)
 
 *Tiers*使用一个特殊的sink将事件通过网络发送，一个对应的*source*接收事件。*Avro sink*通过*Avro RPC*将事件发送到运行在另一个Flume客户端的*Avro source*。也有一个*Thrift sink*通过*Thrift RPC*与一个*Thrift source*协同做同样的事。
 
@@ -246,6 +252,8 @@ agent2.channels.channel2.dataDirs=/tmp/agent2/file-channel/data
 ```
 如下图所示：
 
+![flume_4.JPG](images/flume_4.JPG)
+
 每一个客户客户端独立运行，使用相同的**--conf-file**配置文件，但是不同的客户端**--name**变量：
 ```
 % flume-ng agent --conf-file spool-to-hdfs-tiered.properties --name agent1 ...
@@ -263,6 +271,8 @@ Flume使用事务保证每一份定量的事件从一个source传送到一个cha
 # Sink Groups
 
 一个sink组将多个sinks看作一个整体，如下图，用负载均衡做故障转移。如果第二tier不可用，事件会被发送到另一个第二tier，并可不间断的传送到HDFS
+
+![flume_5.JPG](images/flume_5.JPG)
 
 为了配置一个sink组，客户端**sinkgroups**属性设置sink组的名字，然后sink组列出组内所有的sink，包括sink处理的类型，这决定了处理sink的方式。下例展示两个Avro端点的负载均衡配置
 ```
@@ -317,6 +327,8 @@ agent2a.channels.channel2a.type = file
 agent2.sinks.sink2.hdfs.filePrefix = events-%{host}
 ```
 如下图所示：
+
+![flume_6.JPG](images/flume_6.JPG)
 
 # Flumey应用整合
 
