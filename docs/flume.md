@@ -4,7 +4,7 @@ Flume被设计用来将大量数据驱动的数据传入Hadoop，典型应用场
 
 为了使用Flume，需要运行Flume *agent*端（下文翻译为客户端），这是一个Java的常驻进程，运行*sources*和*sinks*，连接*channels*。Flume中的*sources*产生*events*（以下翻译为事件）并将它们传送到*channel*，*channel*会存储这些*events*直到它们被送到*sink*中。可以认为*source-channel-sink*结合是一个基本的Flume组成部分。
 
-Flume的安装由收集分布式拓扑结构中运行的客户端组成。处于系统边缘的客户端（例如web服务器）收集数据，转发到负责汇总的客户端，最后存储到最终目的地。指定的*sources*和*sinks*客户端被配置用来运行收集工作，实际上使用Flume就是将这个配置放到一起的实践。本文将描述如何搭建Flume拓扑作为Hadoop生态圈的一部分
+Flume的安装由收集分布式拓扑结构中运行的客户端组成。处于系统边缘的客户端（例如web服务器）收集数据，转发到负责汇总的客户端，最后存储到最终目的地。指定的*sources*和*sinks*客户端被配置用来运行收集工作，实际上使用Flume就是将这些配置放到一起的实践。本文将描述如何搭建Flume拓扑作为Hadoop生态圈的一部分
 
 # 安装Flume
 
@@ -30,7 +30,7 @@ Flume客户端可以使用`flume-ng`命令启动，如下所述。
 
 在本例中，Flume客户端运行一个单独的*source-channel-sink*，通过一个Java properties文件配置。配置文件决定了使用*sources*、*sinks*和*channels*的类型，它们是互相关联的。如下例所示：
 ```
-##Flume configuration using a spooling directory source and a logger sink
+# Flume configuration using a spooling directory source and a logger sink
 agent1.sources = source1
 agent1.sinks = sink1
 agent1.channels = channel1
@@ -59,7 +59,7 @@ mkdir /tmp/spooldir
 --conf $FLUME_HOME/conf \
 -Dflume.root.logger=INFO,console
 ```
-如上例中Flume的属性文件需要**-conf-file**指定，客户端的名字必须通过**--name**指定（因Flume可以设置多个客户端，需要指定哪个运行）。**--conf**参数告知Flume寻找它的配置文件，与环境变量类似。
+如上例中Flume的属性文件需要**--conf-file**指定，客户端的名字必须通过**--name**指定（因Flume可以设置多个客户端，需要指定哪个运行）。**--conf**参数告知Flume寻找它的配置文件，与环境变量类似。
 
 在一个新的终端，在spooling目录内新建一个文件，假设这个文件不可改变。为了阻止source读取并改写文件，将内容写入到隐藏文件中。再将文件重命名使source可以读取到：
 ```
@@ -76,13 +76,84 @@ spooling目录将文件按行切割来摄取，每行均产生Flume事件。事�
 
 # 事务和可靠性
 
-Flume将*source*传送到*channel*中，从*channel*传送到*sink*的过程中使用分享的事务。上文所述的例子中，spooling目录的source文件中的每一行产生了一个事件。只有事务成功提交之后，source才会将文件标记为完成
+Flume将*source*传送到*channel*中，从*channel*传送到*sink*的过程中使用分享的事务。上文所述的例子中，spooling目录的source文件中的每一行产生了一个事件。只有事务成功提交之后，source才会将文件标记为完成。
+
+类似的，事务也被用在*channel*到*sink*的传输。如果某些原车导致事件不能被记录，事务会回滚，事件会保持在*channel*中，以用于之后的传输。
+
+上文提到的*channel*是一个*file channel*，拥有持久化存储的属性：一量事件被写入到*channel*中，它不会丢失，即使客户端重启。（Flume也提供一个*memory channel*，因为事件存储在内存中，它没有这种特性持久化存储特性，这种*channel*的事件在客户端重启后会丢失。根据不同的应用场景，这也许可接受。相比之下，*memory channel*比*file channel*有更高的吞吐量。
+
+整体效果上，每个*source*产生的事件都会到达*sink*。注意，每个事件会到达*sink* *至少一次*，这表明，有重复的可能。副本可能由*sources*或*sinks*产生，例如，在客户端重启后，*spooling directory*的*source*会重新发送一个未完成的文件，尽管它们部分已经在重启之前提交到*channel*。重启之后，*logger sink*会重新记录未被提交事务的任何事件。
+
+
+*至少一次*(*at-least-once*)看起来是限制, 但实际上是可以接受的权衡。*完全一次*需要一个两步的提交协议，消耗更多资源。这个选择是区分Flume（一个高容量并行事件接收系统）和其他传统的企业消息系统（*完全一次*）。*at-least-once*产生的重复事件可以在处理的管道流中删除。通常这需要MapReduce或者Hive编写特定的应用程序删除。
 
 ## Batching（定量？）
 
+为了提高效率，Flume尽可能尝试批量处理事件的事务，而不是一个一个处理。批量处理提高了file channel的性能，因为每个事务写入到本地磁盘并且调用**fsync**
+
+批量处理的大小由组件决定，并在许多情况下可配置，例如，*spooling*目录会100行批量读取文件（可以通过修改batchSize属性设置）。类似的，*Avro sink*在将事件通过RPC发送之前试图读取100个来自*channel*的事件，如果有更少的事件也不会影响。
+
+
 # The HDFS Sink
 
+Flume的一个优势在于传输大量数据到Hadoop存储，来看下如何配置Flume客户端将事件传到HDFS sink。下面的配置示例将之前的例子更改为使用HDFS sink。只需要指定sink类型为**hdfs**和**hdfs.path**（指定存放路径，通常为**fs.defaultFS**）两个属性。也已经指定有意义的文件前缀和后缀，表明Flume将事件用文本格式写入到文件中。
+
+```
+#Flume configuration using a spooling directory source and an HDFS
+sink
+agent1.sources = source1
+agent1.sinks = sink1
+agent1.channels = channel1
+agent1.sources.source1.channels = channel1
+agent1.sinks.sink1.channel = channel1
+agent1.sources.source1.type = spooldir
+agent1.sources.source1.spoolDir = /tmp/spooldir
+agent1.sinks.sink1.type = hdfs
+agent1.sinks.sink1.hdfs.path = /tmp/flume
+agent1.sinks.sink1.hdfs.filePrefix = events
+agent1.sinks.sink1.hdfs.fileSuffix = .log
+agent1.sinks.sink1.hdfs.inUsePrefix = _
+agent1.sinks.sink1.hdfs.fileType = DataStream
+agent1.channels.channel1.type = file
+```
+重启客户端，使用*spool-to-hdfs.properties*配置，在本地目录下新建一个新文件：
+```
+% echo -e "Hello\nAgain" > /tmp/spooldir/.file2.txt
+% mv /tmp/spooldir/.file2.txt /tmp/spooldir/file2.txt
+```
+
+现在事件被传输到HDFS并写入到文件中。处理中的文件有一个*.tmp*的后缀在名字中以表明未被处理完成。在此例中，已经设置**hdfs.inUsePrefix**属性为_（下划线，默认为空），这样在处理的文件会它文件名中加入 _ 前缀。一直持续到MapReduce忽略以下划线开头的文件。因此，一个典型的文件名为*_events.1399295780136.log.tmp;*，数字为HDFS sink产生的时间戳。
+
+文件被HDFS sink一直打开，直到指定时间（默认30秒，由*hdfs.rollInterval*属性决定）、指定大小（默认1024字节，由*hdfs.rollSize*决定）或指定事件数目（默认10，由*hdfs.rollCount*决定）。如果任一条件满足，文件关闭，前缀和后缀被删除。新的事件写入到一个新文件（有使用中的前缀和后缀直到处理完）。
+
+30秒之后，确认文件回滚完，可以看下它的内容
+```
+% hadoop fs -cat /tmp/flume/events.1399295780136.log
+Hello
+Again
+```
+HDFS sink写入到文件的用户与运行Flume客户端的用户相同，除非指定了**hdfs.proxyUser**，写入文件由该属性决定
+
+
+## 分区和拦截器
+
+大型数集通常需要分区，如果只有一个子集的需要查询，可以限制在特定的分区中进行处理。对于Flume事件数据，通常按时间分区。一个进程可以定期运行，将完成的分区转换（例如删除重复事件）。
+
+通过设置**hdfs.path**包括时间格式，如下所示，可以改变数据在分区中的存储
+```
+agent1.sinks.sink1.hdfs.path = /tmp/flume/year=%Y/month=%m/day=%d
+```
+这我们选择按日分区，但其它级别的颗粒度也可行，需要设置目录存储的schemes。完成格式参考[Flume User Guide](http://flume.apache.org/FlumeUserGuide.html)
+
+Flume的事件写入分区由事件头部的**timestamp**决定。默认情况下，事件没有头部，但可以使用一个*interceptor*填加。*Interceptor*是可以在流中修改或者删除事件的组件，它们附加到sources，在事件被放到sources之前运行。以下的配置增加了一个时间拦截器到**source1**，增加了一个**timestamp**头到每个由source产生的事件中
+```
+agent1.sources.source1.interceptors = interceptor1
+agent1.sources.source1.interceptors.interceptor1.type = timestamp
+```
+使用时间戳interceptor保证了时间戳反应事件创建的时间。对一些应用来说，当事件写入到HDFS中使用时间戳是充足的，尽管当Flume客户端是多个tiers通常创建时间和写入时间不同，尤其是客户端未运行时的事件。对于这种情况，HDFS sink有一个**hdfs.useLocalTimeStamp**设置，会使用一个运行HDFS sink的Flume客户端生成
+
 ## 文件格式
+
 通常来讲，使用二进制格式来存储数据是一个更好的主意，因为它比文本形式占用更少的空间。对HDFS sink来说，文件存储的格式由*hdfs.fileType*和其它的一些参数共同决定
 
 *hdfs.fileType*的默认值为*SequenceFile*，将事件写入到sequence file中,*LongWritable*包括事件的时间(如果*timestamp*头部未设置，则包括当前时间戳），*BytesWritable*值包括事件主体。将*hdfs.writeFormat*设置为*Text*后，可以用Text Writable代替BytesWritable写入到sequence file中
