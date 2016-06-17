@@ -27,6 +27,22 @@ HDFS的fsck命令可显示块信息
 ```
 %hadoop fsck / -files -blocks
 ```
+HDFS新建目录
+```
+hdfs dfs -mkdir /testHDFS
+```
+HDFS查看目录
+```
+hadoop fs -ls hdfs://
+```
+HDFS将本地文件系统拷入到HDFS
+```
+hdfs dfs -put ./localfs /testHDFS
+```
+启动历史服务器
+```
+mr-jobhistory-daemon.sh start historyserver
+```
 
 ## namenode和datanode
 
