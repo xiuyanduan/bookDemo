@@ -82,3 +82,17 @@ datanode是文件系统的工作节点。它们根据需要存储并检索数据
 ## Sqoop
 
 [Sqoop](http://sqoop.apache.org/)允许用户将数据从结构化存储器抽取到Hadoop中，用于进一步的处理。抽取出的数据可以被MapReduce程序使用，也可以被其他类似于Hive的工具使用。（甚至可以使用Sqoop将数据从数据库转移到HBase）一旦生成最终的分析结果，Sqoop便可以将这些结果导回数据存储器，供其他客户端使用。
+
+## flume
+
+1. Source
+
+Source负责接收输入数据，并将数据写入管道。Flume的Source支持HTTP，JMS，RPC，NetCat，Exec，Spooling Directory。其中Spooling支持监视一个目录或者文件，解析其中新生成的事件。
+
+2. Channel
+
+Channel 存储，缓存从source到Sink的中间数据。可使用不同的配置来做Channel，例如内存，文件，JDBC等。使用内存性能高但不持久，有可能丢数据。使用文件更可靠，但性能不如内存。
+
+3. Sink
+
+Sink负责从管道中读出数据并发给下一个Agent或者最终的目的地。Sink支持的不同目的地种类包括：HDFS，HBASE，Solr，ElasticSearch，File，Logger或者其它的Flume Agent。
