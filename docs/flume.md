@@ -80,9 +80,9 @@ spooling目录将文件按行切割来摄取，每行均产生Flume事件。事�
 
 Flume将*source*传送到*channel*中，从*channel*传送到*sink*的过程中使用分享的事务。上文所述的例子中，spooling目录的source文件中的每一行产生了一个事件。只有事务成功提交之后，source才会将文件标记为完成。
 
-类似的，事务也被用在*channel*到*sink*的传输。如果某些原车导致事件不能被记录，事务会回滚，事件会保持在*channel*中，以用于之后的传输。
+类似的，事务也被用在*channel*到*sink*的传输。如果某些原因导致事件不能被记录，事务会回滚，事件会保持在*channel*中，以用于之后的传输。
 
-上文提到的*channel*是一个*file channel*，拥有持久化存储的属性：一量事件被写入到*channel*中，它不会丢失，即使客户端重启。（Flume也提供一个*memory channel*，因为事件存储在内存中，它没有这种特性持久化存储特性，这种*channel*的事件在客户端重启后会丢失。根据不同的应用场景，这也许可接受。相比之下，*memory channel*比*file channel*有更高的吞吐量。
+上文提到的*channel*是一个*file channel*，拥有持久化存储的属性：一旦事件被写入到*channel*中，它不会丢失，即使客户端重启。（Flume也提供一个*memory channel*，因为事件存储在内存中，它没有这种特性持久化存储特性，这种*channel*的事件在客户端重启后会丢失。根据不同的应用场景，这也许可接受。相比之下，*memory channel*比*file channel*有更高的吞吐量。
 
 整体效果上，每个*source*产生的事件都会到达*sink*。注意，每个事件会到达*sink* *至少一次*，这表明，有重复的可能。副本可能由*sources*或*sinks*产生，例如，在客户端重启后，*spooling directory*的*source*会重新发送一个未完成的文件，尽管它们部分已经在重启之前提交到*channel*。重启之后，*logger sink*会重新记录未被提交事务的任何事件。
 
