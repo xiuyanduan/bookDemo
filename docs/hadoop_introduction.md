@@ -36,9 +36,15 @@ HDFS集群有两类节点以管理者-工作者模式运行，即一个namenode�
 
 datanode是文件系统的工作节点。它们根据需要存储并检索数据块（受客户端或namenode调度），并且定期向namenode发送它们所存储的块的列表。没有namenode，文件系统将无法使用。
 
+## Accessing HDFS over HTTP directly and via a bank of HDFS proxies
+
 ![hadoop_http](images/hadoop_http.JPG)
 
+## A client reading data from HDFS
+
 ![hadoop_reading_data](images/hadoop_reading_data.JPG)
+
+## A client writing data to HDFS
 
 ![hadoop_writing_data](images/hadoop_writing_data.JPG)
 
