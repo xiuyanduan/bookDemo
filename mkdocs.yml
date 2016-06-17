@@ -2,6 +2,7 @@ site_name: Hadoop notes
 pages:
 - index: index.md
 - flume: flume.md 
+- hadoop-introduction: hadoop_introduction.md 
 theme: mkdocs
 #theme: readthedocs
 repo_url: https://github.com/xiuyanduan/bookDemo
