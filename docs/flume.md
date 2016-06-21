@@ -347,15 +347,15 @@ SDK和嵌入客户端更多信息参见官方开发者[文档](http://flume.apac
 类别  | 组件| 备注
 ---|---|---  
 Source | Avro | Listens on a port for events sent over Avro RPC by an Avro sink or the Flume SDK.  
-Sink | Exec | Runs a Unix command (e.g., tail -F/path/to/file) and converts lines read from standard output into events. Note that this source cannot guarantee delivery of events to the channel; see the spooling directory source or the Flume SDK for better alternatives.
-Sink | HTTP| Listens on a port and converts HTTP requests into events using a pluggable handler (e.g., a JSON handler or binary blob handler).
-Sink | JMS | Reads messages from a JMS queue or topic and converts them into events.
-Sink | Netcat | Listens on a port and converts each line of text into an event.
-Sink | Sequence generator | Generates events from an incrementing counter. Useful for testing.
-Sink | Spooling directory | Reads lines from files placed in a spooling directory and converts them into events.
-Sink | Syslog | Reads lines from syslog and converts them into events.
-Sink | Thrift | Listens on a port for events sent over Thrift RPC by a Thrift sink or the Flume SDK.
-Sink | Twitter | Connects to Twitter’s streaming API (1% of the firehose) and converts tweets into events.
+Source | Exec | Runs a Unix command (e.g., tail -F/path/to/file) and converts lines read from standard output into events. Note that this source cannot guarantee delivery of events to the channel; see the spooling directory source or the Flume SDK for better alternatives.
+Source | HTTP| Listens on a port and converts HTTP requests into events using a pluggable handler (e.g., a JSON handler or binary blob handler).
+Source | JMS | Reads messages from a JMS queue or topic and converts them into events.
+Source | Netcat | Listens on a port and converts each line of text into an event.
+Source | Sequence generator | Generates events from an incrementing counter. Useful for testing.
+Source | Spooling directory | Reads lines from files placed in a spooling directory and converts them into events.
+Source | Syslog | Reads lines from syslog and converts them into events.
+Source | Thrift | Listens on a port for events sent over Thrift RPC by a Thrift sink or the Flume SDK.
+Source | Twitter | Connects to Twitter’s streaming API (1% of the firehose) and converts tweets into events.
 Sink | Avro | Sends events over Avro RPC to an Avro source.
 Sink | Elasticsearch| Writes events to an Elasticsearch cluster using the Logstash format.
 Sink | File roll | Writes events to the local filesystem.
